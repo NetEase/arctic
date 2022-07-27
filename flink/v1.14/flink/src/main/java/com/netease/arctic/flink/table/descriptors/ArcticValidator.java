@@ -105,6 +105,13 @@ public class ArcticValidator extends ConnectorDescriptorValidator {
           " the current snapshot, \"latest\": read all incremental data in the change table starting from the" +
           " current snapshot (the current snapshot will be excluded).");
 
+  public static final ConfigOption<Boolean> USING_CUSTOM_WATERMARK_STRATEGY = ConfigOptions
+      .key("source.using.custom.watermark-strategy").booleanType().defaultValue(false)
+      .withDescription("Indicates whether to apply a custom watermark strategy to the source scan." +
+          " Only primary key tables are supported. Default value is false. If true, Arctic source will fetch all data" +
+          " and emit the same lower watermark (1970-01-01 00:00:00 GMT) during in static source reading, then emit" +
+          " the continuous watermark with process time during incremental reading.");
+
   @Override
   public void validate(DescriptorProperties properties) {
     String emitMode = properties.getString(ARCTIC_EMIT_MODE);

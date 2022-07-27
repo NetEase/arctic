@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import static com.netease.arctic.flink.table.descriptors.ArcticValidator.USING_CUSTOM_WATERMARK_STRATEGY;
 import static org.apache.iceberg.TableProperties.DEFAULT_NAME_MAPPING;
 
 /**
@@ -40,6 +41,7 @@ public class ArcticScanContext extends ScanContext implements Serializable {
   private static final long serialVersionUID = 1L;
 
   private final String scanStartupMode;
+  private final boolean usingCustomWatermarkStrategy;
 
   protected ArcticScanContext(
       boolean caseSensitive,
@@ -56,7 +58,8 @@ public class ArcticScanContext extends ScanContext implements Serializable {
       Schema schema,
       List<Expression> filters,
       long limit,
-      String scanStartupMode) {
+      String scanStartupMode,
+      boolean usingCustomWatermarkStrategy) {
     super(caseSensitive,
         snapshotId,
         startSnapshotId,
@@ -72,6 +75,7 @@ public class ArcticScanContext extends ScanContext implements Serializable {
         filters,
         limit);
     this.scanStartupMode = scanStartupMode;
+    this.usingCustomWatermarkStrategy = usingCustomWatermarkStrategy;
   }
 
   public boolean caseSensitive() {
@@ -138,6 +142,10 @@ public class ArcticScanContext extends ScanContext implements Serializable {
     return scanStartupMode;
   }
 
+  public boolean usingCustomWatermarkStrategy() {
+    return usingCustomWatermarkStrategy;
+  }
+
   public static class Builder {
     private boolean caseSensitive = CASE_SENSITIVE.defaultValue();
     private Long snapshotId = SNAPSHOT_ID.defaultValue();
@@ -154,6 +162,7 @@ public class ArcticScanContext extends ScanContext implements Serializable {
     private List<Expression> filters;
     private long limit = -1L;
     private String scanStartupMode;
+    private boolean usingCustomWatermarkStrategy = USING_CUSTOM_WATERMARK_STRATEGY.defaultValue();
 
     private Builder() {
     }
@@ -233,6 +242,11 @@ public class ArcticScanContext extends ScanContext implements Serializable {
       return this;
     }
 
+    public Builder usingCustomWatermarkStrategy(boolean usingCustomWatermarkStrategy) {
+      this.usingCustomWatermarkStrategy = usingCustomWatermarkStrategy;
+      return this;
+    }
+
     public Builder fromProperties(Map<String, String> properties) {
       Configuration config = new Configuration();
       properties.forEach(config::setString);
@@ -254,7 +268,7 @@ public class ArcticScanContext extends ScanContext implements Serializable {
       return new ArcticScanContext(caseSensitive, snapshotId, startSnapshotId,
           endSnapshotId, asOfTimestamp, splitSize, splitLookback,
           splitOpenFileCost, isStreaming, monitorInterval, nameMapping, projectedSchema,
-          filters, limit, scanStartupMode);
+          filters, limit, scanStartupMode, usingCustomWatermarkStrategy);
     }
   }
 }

@@ -58,6 +58,7 @@ import org.apache.iceberg.flink.util.FlinkCompatibilityUtil;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.relocated.com.google.common.collect.Maps;
+import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.util.PropertyUtil;
 
 import java.util.Collections;
@@ -163,7 +164,8 @@ public class ArcticCatalog extends AbstractCatalog {
     ArcticTable table = internalCatalog.loadTable(tableIdentifier);
     Schema arcticSchema = table.schema();
 
-    RowType rowType = FlinkSchemaUtil.convert(arcticSchema);
+//    RowType rowType = FlinkSchemaUtil.convert(arcticSchema);
+    RowType rowType = (RowType) TypeUtil.visit(arcticSchema, new TypeToFlinkType());
     Map<String, String> arcticProperties = Maps.newHashMap(table.properties());
     fillTableProperties(arcticProperties);
 

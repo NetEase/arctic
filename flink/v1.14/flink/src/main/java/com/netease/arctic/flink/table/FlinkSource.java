@@ -22,10 +22,13 @@ import com.netease.arctic.flink.interceptor.ProxyFactory;
 import com.netease.arctic.flink.read.ArcticSource;
 import com.netease.arctic.flink.read.hybrid.reader.RowDataReaderFunction;
 import com.netease.arctic.flink.read.source.ArcticScanContext;
+import com.netease.arctic.flink.read.watermark.IncrementalWatermarkStrategy;
 import com.netease.arctic.flink.util.ArcticUtils;
 import com.netease.arctic.flink.util.IcebergClassUtil;
 import com.netease.arctic.flink.util.ProxyUtil;
 import com.netease.arctic.table.ArcticTable;
+import org.apache.flink.api.common.eventtime.WatermarkGenerator;
+import org.apache.flink.api.common.eventtime.WatermarkGeneratorSupplier;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.dag.Transformation;
@@ -50,6 +53,8 @@ import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.netease.arctic.flink.table.descriptors.ArcticValidator.USING_CUSTOM_WATERMARK_STRATEGY;
 
 /**
  * An util class create arctic source data stream.
@@ -152,6 +157,15 @@ public class FlinkSource {
           scanContext.caseSensitive(),
           arcticTable.io()
       );
+      if (scanContext.usingCustomWatermarkStrategy()) {
+        if (watermarkStrategy != null) {
+          throw new IllegalArgumentException(
+              String.format(
+                  "You can't config %s=true, and config a watermark to the source table %s.",
+                  USING_CUSTOM_WATERMARK_STRATEGY.key(), arcticTable.name()));
+        }
+        watermarkStrategy = new IncrementalWatermarkStrategy();
+      }
       return env.fromSource(
           new ArcticSource<>(tableLoader, scanContext, rowDataReaderFunction,
               InternalTypeInfo.of(FlinkSchemaUtil.convert(scanContext.project())), arcticTable.name()),
