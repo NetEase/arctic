@@ -62,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -250,8 +251,15 @@ public class TableOptimizeItem extends IJDBCService {
         optimizeTaskItem.onFailed(optimizeTaskStat.getErrorMessage(), optimizeTaskStat.getCostTime());
         break;
       case Prepared:
+        List<ByteBuffer> targetFiles = optimizeTaskStat.getFiles();
+        long targetFileSize = optimizeTaskStat.getNewFileSize();
+        // if minor optimize, insert files as base new files
+        if (optimizeTaskItem.getOptimizeTask().getTaskId().getType() == OptimizeType.Minor) {
+          targetFiles.addAll(optimizeTaskItem.getOptimizeTask().getInsertFiles());
+          targetFileSize = targetFileSize + optimizeTaskItem.getOptimizeTask().getInsertFileSize();
+        }
         optimizeTaskItem.onPrepared(optimizeTaskStat.getReportTime(),
-            optimizeTaskStat.getFiles(), optimizeTaskStat.getNewFileSize(), optimizeTaskStat.getCostTime());
+            targetFiles, targetFileSize, optimizeTaskStat.getCostTime());
         break;
       default:
         throw new IllegalArgumentException("unsupported status: " + optimizeTaskStat.getStatus());
@@ -409,7 +417,8 @@ public class TableOptimizeItem extends IJDBCService {
         // when minor optimize, there is no need to execute task not contains deleteFiles,
         // but the inertFiles need to commit to base table
         if (optimizeTask.getTaskId().getType().equals(OptimizeType.Minor) && optimizeTask.getDeleteFiles().isEmpty()) {
-          optimizeTaskItem.onPrepared(System.currentTimeMillis(), Collections.emptyList(), 0, 0L);
+          optimizeTaskItem.onPrepared(System.currentTimeMillis(),
+              optimizeTask.getInsertFiles(), optimizeTask.getInsertFileSize(), 0L);
         }
         optimizeTaskItem.clearFiles();
       }
