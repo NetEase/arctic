@@ -82,7 +82,7 @@ public class TestMinorOptimizeCommit extends TestMinorOptimizePlan {
     TableOptimizeRuntime tableOptimizeRuntime =  new TableOptimizeRuntime(testKeyedTable.id());
     MinorOptimizePlan minorOptimizePlan = new MinorOptimizePlan(testKeyedTable,
        tableOptimizeRuntime, baseDataFilesInfo, changeTableFilesInfo, posDeleteFilesInfo,
-        new HashMap<>(), 1, System.currentTimeMillis());
+        new HashMap<>(), 1, System.currentTimeMillis(), snapshotId -> true);
     List<BaseOptimizeTask> tasks = minorOptimizePlan.plan();
 
     Map<TreeNode, List<DeleteFile>> resultFiles = generateTargetFiles();

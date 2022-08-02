@@ -76,7 +76,7 @@ public class TestMajorOptimizePlan extends TestBaseOptimizePlan {
 
     MajorOptimizePlan majorOptimizePlan = new MajorOptimizePlan(testKeyedTable,
         new TableOptimizeRuntime(testKeyedTable.id()), baseDataFilesInfo, posDeleteFilesInfo,
-        new HashMap<>(), 1, System.currentTimeMillis());
+        new HashMap<>(), 1, System.currentTimeMillis(), snapshotId -> true);
     List<BaseOptimizeTask> tasks = majorOptimizePlan.plan();
     Assert.assertEquals(4, tasks.size());
     Assert.assertEquals(10, tasks.get(0).getBaseFiles().size());
@@ -96,7 +96,7 @@ public class TestMajorOptimizePlan extends TestBaseOptimizePlan {
 
     MajorOptimizePlan majorOptimizePlan = new MajorOptimizePlan(testKeyedTable,
         new TableOptimizeRuntime(testKeyedTable.id()), baseDataFilesInfo, posDeleteFilesInfo,
-        new HashMap<>(), 1, System.currentTimeMillis());
+        new HashMap<>(), 1, System.currentTimeMillis(), snapshotId -> true);
     List<BaseOptimizeTask> tasks = majorOptimizePlan.plan();
     Assert.assertEquals(4, tasks.size());
     Assert.assertEquals(10, tasks.get(0).getBaseFiles().size());
@@ -112,7 +112,7 @@ public class TestMajorOptimizePlan extends TestBaseOptimizePlan {
 
     MajorOptimizePlan majorOptimizePlan = new MajorOptimizePlan(testTable,
         new TableOptimizeRuntime(testTable.id()), baseDataFilesInfo, posDeleteFilesInfo,
-        new HashMap<>(), 1, System.currentTimeMillis());
+        new HashMap<>(), 1, System.currentTimeMillis(), snapshotId -> true);
     List<BaseOptimizeTask> tasks = majorOptimizePlan.plan();
     Assert.assertEquals(2, tasks.size());
     Assert.assertEquals(5, tasks.get(0).getBaseFileCnt());

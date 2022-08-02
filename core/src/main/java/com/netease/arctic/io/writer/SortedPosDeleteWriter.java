@@ -44,7 +44,7 @@ import java.util.Map;
  * @param <T> to indicate the record data type.
  */
 public class SortedPosDeleteWriter<T> implements Closeable {
-  private static final long DEFAULT_RECORDS_NUM_THRESHOLD = 100_000L;
+  private static final long DEFAULT_RECORDS_NUM_THRESHOLD = Long.MAX_VALUE;
 
   private final Map<CharSequenceWrapper, List<PosRow<T>>> posDeletes = Maps.newHashMap();
   private final List<DeleteFile> completedFiles = Lists.newArrayList();

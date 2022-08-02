@@ -57,7 +57,7 @@ public class TestMajorOptimizeCommit extends TestMajorOptimizePlan {
     TableOptimizeRuntime tableOptimizeRuntime = new TableOptimizeRuntime(testKeyedTable.id());
     MajorOptimizePlan majorOptimizePlan = new MajorOptimizePlan(testKeyedTable,
         tableOptimizeRuntime, baseDataFilesInfo, posDeleteFilesInfo,
-        new HashMap<>(), 1, System.currentTimeMillis());
+        new HashMap<>(), 1, System.currentTimeMillis(), snapshotId -> true);
     List<BaseOptimizeTask> tasks = majorOptimizePlan.plan();
 
     Map<TreeNode, List<DataFile>> resultFiles = generateTargetFiles();

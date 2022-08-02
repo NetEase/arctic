@@ -36,10 +36,12 @@ import org.apache.iceberg.DeleteFile;
 import org.apache.iceberg.OverwriteFiles;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.RewriteFiles;
+import org.apache.iceberg.exceptions.ValidationException;
 import org.apache.iceberg.util.StructLikeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -161,9 +163,12 @@ public class BaseOptimizeCommit {
           }
         });
         AtomicInteger deletedPosDeleteFile = new AtomicInteger(0);
+        Set<DeleteFile> deletedPosDeleteFiles = new HashSet<>();
         minorDeleteFiles.forEach(contentFile -> {
           if (contentFile instanceof DataFile) {
             overwriteBaseFiles.deleteFile((DataFile) contentFile);
+          } else {
+            deletedPosDeleteFiles.add((DeleteFile) contentFile);
           }
         });
 
@@ -173,6 +178,17 @@ public class BaseOptimizeCommit {
           maxTransactionIds.forEach(overwriteBaseFiles::withMaxTransactionId);
         }
         overwriteBaseFiles.commit();
+
+        if (CollectionUtils.isNotEmpty(deletedPosDeleteFiles)) {
+          RewriteFiles rewriteFiles = baseArcticTable.newRewrite();
+          rewriteFiles.rewriteFiles(Collections.emptySet(), deletedPosDeleteFiles,
+              Collections.emptySet(), Collections.emptySet());
+          try {
+            rewriteFiles.commit();
+          } catch (ValidationException e) {
+            LOG.warn("Iceberg RewriteFiles commit failed, but ignore", e);
+          }
+        }
 
         LOG.info("{} minor optimize committed, delete {} files [{} posDelete files], " +
                 "add {} new files [{} posDelete files]",
