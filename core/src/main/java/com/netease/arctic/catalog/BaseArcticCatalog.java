@@ -179,7 +179,7 @@ public class BaseArcticCatalog implements ArcticCatalog {
     }
   }
 
-  private KeyedTable loadKeyedTable(TableMeta tableMeta) {
+  protected KeyedTable loadKeyedTable(TableMeta tableMeta) {
     TableIdentifier tableIdentifier = TableIdentifier.of(tableMeta.getTableIdentifier());
     String tableLocation = checkLocation(tableMeta, MetaTableProperties.LOCATION_KEY_TABLE);
     String baseLocation = checkLocation(tableMeta, MetaTableProperties.LOCATION_KEY_BASE);
@@ -211,7 +211,7 @@ public class BaseArcticCatalog implements ArcticCatalog {
     return builder.build();
   }
 
-  private UnkeyedTable loadUnKeyedTable(TableMeta tableMeta) {
+  protected UnkeyedTable loadUnKeyedTable(TableMeta tableMeta) {
     TableIdentifier tableIdentifier = TableIdentifier.of(tableMeta.getTableIdentifier());
     String baseLocation = checkLocation(tableMeta, MetaTableProperties.LOCATION_KEY_BASE);
     Table table = tableMetaStore.doAs(() -> tables.load(baseLocation));

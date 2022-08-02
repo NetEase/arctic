@@ -18,6 +18,8 @@
 
 package com.netease.arctic.ams.api.properties;
 
+import java.util.concurrent.TimeUnit;
+
 public class CatalogMetaProperties {
     public static final String STORAGE_CONFIGS_KEY_TYPE = "storage.type" ;
     public static final String STORAGE_CONFIGS_KEY_HDFS_SITE = "hadoop.hdfs.site" ;
@@ -38,4 +40,10 @@ public class CatalogMetaProperties {
     public static final String KEY_WAREHOUSE_DIR = "warehouse.dir";
 
     public static final String CATALOG_TYPE_HADOOP = "hadoop";
+
+    public static final String CLIENT_POOL_SIZE = "clients";
+    public static final int CLIENT_POOL_SIZE_DEFAULT = 2;
+
+    public static final String CLIENT_POOL_CACHE_EVICTION_INTERVAL_MS = "client.pool.cache.eviction-interval-ms";
+    public static final long CLIENT_POOL_CACHE_EVICTION_INTERVAL_MS_DEFAULT = TimeUnit.MINUTES.toMillis(5);
 }
