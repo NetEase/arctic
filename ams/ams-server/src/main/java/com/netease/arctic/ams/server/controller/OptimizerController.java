@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +92,25 @@ public class OptimizerController extends RestBaseController {
           }
         }
       }
+      // sort the table list
+      arcticTableItemList.sort(new Comparator<TableOptimizeItem>() {
+        @Override
+        public int compare(TableOptimizeItem o1, TableOptimizeItem o2) {
+          // first we compare the status , and then we compare the start time when status are equal;
+          int statDiff = o1.getTableOptimizeRuntime().getOptimizeStatus()
+                  .compareTo(o2.getTableOptimizeRuntime().getOptimizeStatus());
+          // status order is asc, starttime order is desc
+          if (statDiff == 0) {
+            long timeDiff = o1.getTableOptimizeRuntime().getOptimizeStatusStartTime() -
+                    o2.getTableOptimizeRuntime().getOptimizeStatusStartTime();
+            return timeDiff >= 0 ? (timeDiff == 0 ? 0 : -1) : 1;
+          } else if (statDiff < 0) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }
+      });
       PageResult<TableOptimizeItem, TableOptimizeInfo> amsPageResult = PageResult.of(arcticTableItemList,
               offset, pageSize, TableOptimizeItem::buildTableOptimizeInfo);
       ctx.json(OkResponse.of(amsPageResult));
