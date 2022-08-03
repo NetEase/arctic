@@ -20,6 +20,7 @@ package com.netease.arctic.ams.server.model;
 
 public class SnapshotStatistics {
   private long id;
+  private long parentId;
   private long commitTime;
 
   public long getId() {
@@ -28,6 +29,14 @@ public class SnapshotStatistics {
 
   public void setId(long id) {
     this.id = id;
+  }
+
+  public long getParentId() {
+    return parentId;
+  }
+
+  public void setParentId(long parentId) {
+    this.parentId = parentId;
   }
 
   public long getCommitTime() {

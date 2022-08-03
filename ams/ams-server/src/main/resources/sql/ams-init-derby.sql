@@ -132,8 +132,10 @@ CREATE TABLE table_metadata (
 );
 
 CREATE TABLE file_info_cache (
+    primary_key_md5 varchar(64) NOT NULL,
     table_identifier varchar(64) NOT NULL,
     add_snapshot_id bigint NOT NULL,
+    parent_snapshot_id bigint NOT NULL,
     delete_snapshot_id bigint DEFAULT NULL,
     inner_table varchar(64) DEFAULT NULL,
     file_path varchar(400) NOT NULL,
@@ -147,7 +149,7 @@ CREATE TABLE file_info_cache (
     action varchar(64) DEFAULT NULL,
     commit_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     watermark timestamp DEFAULT NULL,
-    PRIMARY KEY (table_identifier,inner_table,file_path)
+    PRIMARY KEY (primary_key_md5)
 );
 
 CREATE TABLE optimize_file (

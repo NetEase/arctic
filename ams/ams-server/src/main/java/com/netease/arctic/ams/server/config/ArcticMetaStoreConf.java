@@ -138,7 +138,7 @@ public class ArcticMetaStoreConf {
   public static final ConfigOption<Long> TABLE_FILE_INFO_CACHE_INTERVAL =
       ConfigOptions.key("table.file.info.cache.interval")
           .longType()
-          .defaultValue(6 * 60 * 60 * 1000L)
+          .defaultValue(5 * 60 * 1000L)
           .withDescription("table file info will be sync-cache when there is long time no cache data.");
   public static final ConfigOption<String> SYSTEM_EXTENSION_PROPERTIES =
       ConfigOptions.key("system.extension.properties")

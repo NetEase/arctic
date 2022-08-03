@@ -25,9 +25,12 @@ public class CacheFileInfo {
 
   private TableIdentifier tableIdentifier;
   private Long addSnapshotId;
+  private Long parentSnapshotId;
   private Long deleteSnapshotId;
   private String innerTable;
   private String filePath;
+  // primaryKeyMd5 = md5(TableMetadataUtil.getTableAllIdentifyName(tableIdentifier)+innerTable+filePath)
+  private String primaryKeyMd5;
   private String fileType;
   private Long fileSize;
   private Long fileMask;
@@ -43,11 +46,14 @@ public class CacheFileInfo {
 
   }
 
-  public CacheFileInfo(TableIdentifier tableIdentifier, Long addSnapshotId, Long deleteSnapshotId, String innerTable,
+  public CacheFileInfo(String primaryKeyMd5, TableIdentifier tableIdentifier, Long addSnapshotId,
+      Long parentSnapshotId, Long deleteSnapshotId, String innerTable,
       String filePath, String fileType, Long fileSize, Long fileMask, Long fileIndex, Long specId,
       String partitionName, Long commitTime, Long recordCount, String action, Long watermark) {
+    this.primaryKeyMd5 = primaryKeyMd5;
     this.tableIdentifier = tableIdentifier;
     this.addSnapshotId = addSnapshotId;
+    this.parentSnapshotId = parentSnapshotId;
     this.deleteSnapshotId = deleteSnapshotId;
     this.innerTable = innerTable;
     this.filePath = filePath;
@@ -72,6 +78,14 @@ public class CacheFileInfo {
     dataFileInfo.setType(fileType);
 
     return dataFileInfo;
+  }
+
+  public String getPrimaryKeyMd5() {
+    return primaryKeyMd5;
+  }
+
+  public void setPrimaryKeyMd5(String primaryKeyMd5) {
+    this.primaryKeyMd5 = primaryKeyMd5;
   }
 
   public Long getCommitTime() {
@@ -104,6 +118,14 @@ public class CacheFileInfo {
 
   public void setAddSnapshotId(Long addSnapshotId) {
     this.addSnapshotId = addSnapshotId;
+  }
+
+  public Long getParentSnapshotId() {
+    return parentSnapshotId;
+  }
+
+  public void setParentSnapshotId(Long parentSnapshotId) {
+    this.parentSnapshotId = parentSnapshotId;
   }
 
   public Long getDeleteSnapshotId() {

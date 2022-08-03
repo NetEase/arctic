@@ -173,7 +173,11 @@ public class ArcticTableMetastoreHandler implements AmsClient, ArcticTableMetast
     if (commit.getProperties() != null) {
       metaService.updateTableProperties(identifier, commit.getProperties());
     }
-    fileInfoCacheService.commitCacheFileInfo(commit);
+    try {
+      fileInfoCacheService.commitCacheFileInfo(commit);
+    } catch (Exception e) {
+      LOG.warn("commit file cache failed", e);
+    }
   }
 
   @Override

@@ -23,6 +23,7 @@ import com.netease.arctic.ams.api.TableIdentifier;
 import com.netease.arctic.ams.server.model.CacheFileInfo;
 import com.netease.arctic.ams.server.model.PartitionBaseInfo;
 import com.netease.arctic.ams.server.model.PartitionFileBaseInfo;
+import com.netease.arctic.ams.server.model.SnapshotStatistics;
 import com.netease.arctic.ams.server.model.TransactionsOfTable;
 import com.netease.arctic.ams.server.mybatis.Long2TsConvertor;
 import org.apache.ibatis.annotations.Delete;
@@ -39,21 +40,21 @@ import java.util.List;
 public interface FileInfoCacheMapper {
   String TABLE_NAME = "file_info_cache";
 
-  @Insert("replace into " + TABLE_NAME + " (table_identifier, add_snapshot_id, delete_snapshot_id," +
-      " inner_table, file_path, file_type, file_size, file_mask, file_index, spec_id, record_count, " +
+  @Insert("insert into " + TABLE_NAME + " (table_identifier, add_snapshot_id, parent_snapshot_id, delete_snapshot_id," +
+      " inner_table, file_path, primary_key_md5, file_type, file_size, file_mask, file_index, spec_id, record_count, " +
       "action, partition_name, commit_time, watermark) values(#{cacheFileInfo.tableIdentifier, typeHandler=com" +
       ".netease.arctic.ams.server.mybatis.TableIdentifier2StringConverter}, " +
-      "#{cacheFileInfo.addSnapshotId}, #{cacheFileInfo" +
-      ".deleteSnapshotId}, #{cacheFileInfo.innerTable}, #{cacheFileInfo.filePath}, #{cacheFileInfo.fileType}, " +
+      "#{cacheFileInfo.addSnapshotId}, #{cacheFileInfo.parentSnapshotId}, #{cacheFileInfo" +
+      ".deleteSnapshotId}, #{cacheFileInfo.innerTable}, #{cacheFileInfo.filePath}, #{cacheFileInfo.primaryKeyMd5}, " +
+      "#{cacheFileInfo.fileType}, " +
       "#{cacheFileInfo.fileSize}, #{cacheFileInfo.fileMask}, #{cacheFileInfo.fileIndex}, #{cacheFileInfo.specId}, " +
       "#{cacheFileInfo.recordCount}, #{cacheFileInfo.action}, #{cacheFileInfo.partitionName}, #{cacheFileInfo" +
       ".commitTime,typeHandler=com.netease.arctic.ams.server.mybatis.Long2TsConvertor}, #{cacheFileInfo" +
       ".watermark,typeHandler=com.netease.arctic.ams.server.mybatis.Long2TsConvertor})")
   void insertCache(@Param("cacheFileInfo") CacheFileInfo cacheFileInfo);
 
-  @Update("update " + TABLE_NAME + " set delete_snapshot_id = #{cache.deleteSnapshotId} where table_identifier = " +
-      "#{cache.tableIdentifier, typeHandler=com.netease.arctic.ams.server.mybatis" +
-      ".TableIdentifier2StringConverter} and file_path = #{cache.filePath} and inner_table = #{cache.innerTable}")
+  @Update("update " + TABLE_NAME + " set delete_snapshot_id = #{cache.deleteSnapshotId} where primary_key_md5 = " +
+      "#{cache.primaryKeyMd5}")
   void updateCache(@Param("cache") CacheFileInfo cache);
 
   @Select(
@@ -178,4 +179,19 @@ public interface FileInfoCacheMapper {
           "watermark desc limit 1")
   Timestamp getWatermark(@Param("tableIdentifier") TableIdentifier tableIdentifier,
       @Param("innerTable") String innerTable);
+
+  @Select("select add_snapshot_id,parent_snapshot_id, commit_time from " + TABLE_NAME + " where table_identifier = " +
+      "#{tableIdentifier," +
+      " typeHandler=com.netease.arctic.ams.server.mybatis.TableIdentifier2StringConverter} and inner_table = " +
+      "#{type} and commit_time = (select max(commit_time) from file_info_cache where table_identifier = " +
+      "#{tableIdentifier, typeHandler=com.netease.arctic.ams.server.mybatis.TableIdentifier2StringConverter} and " +
+      "inner_table = #{type})")
+  @Results({
+      @Result(column = "add_snapshot_id", property = "id"),
+      @Result(column = "parent_snapshot_id", property = "parentId"),
+      @Result(column = "commit_time", property = "commitTime",
+          typeHandler = Long2TsConvertor.class)
+  })
+  List<SnapshotStatistics> getCurrentSnapInfo(@Param("tableIdentifier") TableIdentifier tableIdentifier,
+      @Param("type") String tableType);
 }

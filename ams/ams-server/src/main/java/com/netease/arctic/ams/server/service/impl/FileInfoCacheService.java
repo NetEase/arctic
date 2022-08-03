@@ -18,6 +18,7 @@
 
 package com.netease.arctic.ams.server.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.netease.arctic.AmsClient;
 import com.netease.arctic.ams.api.Constants;
 import com.netease.arctic.ams.api.DataFile;
@@ -54,16 +55,23 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.relocated.com.google.common.base.Charsets;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
+import org.apache.iceberg.relocated.com.google.common.hash.Hashing;
 import org.apache.iceberg.util.SnapshotUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class FileInfoCacheService extends IJDBCService {
 
@@ -77,27 +85,33 @@ public class FileInfoCacheService extends IJDBCService {
       return;
     }
 
-    List<CacheSnapshotInfo> cacheSnapInfoList = genSnapInfo(tableCommitMeta);
     List<CacheFileInfo> fileInfoList = genFileInfo(tableCommitMeta);
 
     try (SqlSession sqlSession = getSqlSession(false)) {
-      FileInfoCacheMapper fileInfoCacheMapper = getMapper(sqlSession, FileInfoCacheMapper.class);
-      fileInfoList.stream().filter(e -> e.getDeleteSnapshotId() == null)
-          .forEach(fileInfoCacheMapper::insertCache);
-      LOG.info("insert {} files into file cache", fileInfoList.stream().filter(e -> e.getDeleteSnapshotId() == null)
-          .count());
+      try {
+        FileInfoCacheMapper fileInfoCacheMapper = getMapper(sqlSession, FileInfoCacheMapper.class);
+        fileInfoList.stream().filter(e -> e.getDeleteSnapshotId() == null)
+            .forEach(fileInfoCacheMapper::insertCache);
+        LOG.info("insert {} files into file cache", fileInfoList.stream().filter(e -> e.getDeleteSnapshotId() == null)
+            .count());
 
-      fileInfoList.stream().filter(e -> e.getDeleteSnapshotId() != null).forEach(fileInfoCacheMapper::updateCache);
-      LOG.info("update {} files in file cache", fileInfoList.stream().filter(e -> e.getDeleteSnapshotId() != null)
-          .count());
+        fileInfoList.stream().filter(e -> e.getDeleteSnapshotId() != null).forEach(fileInfoCacheMapper::updateCache);
+        LOG.info("update {} files in file cache", fileInfoList.stream().filter(e -> e.getDeleteSnapshotId() != null)
+            .count());
 
-      SnapInfoCacheMapper snapInfoCacheMapper = getMapper(sqlSession, SnapInfoCacheMapper.class);
-      cacheSnapInfoList.forEach(snapInfoCacheMapper::insertCache);
-      LOG.info("insert {} snapshot into snapshot cache", cacheSnapInfoList.size());
-
-      sqlSession.commit();
+        sqlSession.commit();
+        Map<String, Long> lastSnap = lastSnapInfo(tableCommitMeta);
+        for (Map.Entry<String, Long> entry : lastSnap.entrySet()) {
+          String innerTableIdentifier =
+              TableMetadataUtil.getTableAllIdentifyName(tableCommitMeta.getTableIdentifier()) + "." + entry.getKey();
+          cacheTableSnapshot.put(innerTableIdentifier, entry.getValue());
+        }
+      } catch (Exception e) {
+        sqlSession.rollback();
+        LOG.error("insert file cache {} error", JSONObject.toJSONString(tableCommitMeta), e);
+      }
     } catch (Exception e) {
-      LOG.error("insert file cache error", e);
+      LOG.error("insert file cache {} error", JSONObject.toJSONString(tableCommitMeta), e);
     }
   }
 
@@ -115,21 +129,26 @@ public class FileInfoCacheService extends IJDBCService {
     }
   }
 
-  public List<SnapshotStatistics> getCurrentSnapInfo(TableIdentifier identifier, String innerTable) {
+  public SnapshotStatistics getCurrentSnapInfo(TableIdentifier identifier, String innerTable) {
     try (SqlSession sqlSession = getSqlSession(true)) {
-      SnapInfoCacheMapper snapInfoCacheMapper = getMapper(sqlSession, SnapInfoCacheMapper.class);
-      return snapInfoCacheMapper.getCurrentSnapInfo(identifier, innerTable);
+      FileInfoCacheMapper fileInfoCacheMapper = getMapper(sqlSession, FileInfoCacheMapper.class);
+      List<SnapshotStatistics> snaps = fileInfoCacheMapper.getCurrentSnapInfo(identifier, innerTable);
+      if (CollectionUtils.isNotEmpty(snaps)) {
+        return lastSnapInfo(identifier, snaps);
+      } else {
+        return null;
+      }
     }
   }
 
-  private void syncCache(TableIdentifier identifier, String innerTable, Long parentSnapId) {
+  private void syncCache(TableIdentifier identifier, String innerTable) {
     try (SqlSession sqlSession = getSqlSession(true)) {
 
-      SnapInfoCacheMapper snapInfoCacheMapper = getMapper(sqlSession, SnapInfoCacheMapper.class);
-      List<Long> snaps = snapInfoCacheMapper.getCurrentSnap(identifier, innerTable, parentSnapId);
+      FileInfoCacheMapper fileInfoCacheMapper = getMapper(sqlSession, FileInfoCacheMapper.class);
+      List<SnapshotStatistics> snaps = fileInfoCacheMapper.getCurrentSnapInfo(identifier, innerTable);
 
       if (CollectionUtils.isNotEmpty(snaps)) {
-        Long currSnap = snaps.get(0);
+        Long currSnap = lastSnapInfo(identifier, snaps).getId();
         String innerTableIdentifier =
             TableMetadataUtil.getTableAllIdentifyName(identifier) + "." + innerTable;
         cacheTableSnapshot.put(innerTableIdentifier, currSnap);
@@ -137,16 +156,52 @@ public class FileInfoCacheService extends IJDBCService {
     }
   }
 
+  private SnapshotStatistics lastSnapInfo(TableIdentifier identifier, List<SnapshotStatistics> snapshots) {
+    if (snapshots.size() == 1) {
+      return snapshots.get(0);
+    }
+    List<Long> parentSnaps = snapshots.stream().map(SnapshotStatistics::getParentId).collect(Collectors.toList());
+    for (SnapshotStatistics s : snapshots) {
+      if (!parentSnaps.contains(s.getId())) {
+        return s;
+      }
+    }
+    throw new RuntimeException("Error snapshot in file cache for table:" + identifier);
+  }
+
+  private Map<String, Long> lastSnapInfo(TableCommitMeta tableCommitMeta) {
+    Map<String, Long> rs = new HashMap<>();
+    if (tableCommitMeta.getChanges() != null && !tableCommitMeta.getChanges().isEmpty()) {
+      List<Long> baseTableSnap = new ArrayList<>();
+      List<Long> changeTableSnap = new ArrayList<>();
+      tableCommitMeta.getChanges().forEach(change -> {
+        if (change.getInnerTable().equalsIgnoreCase(Constants.INNER_TABLE_BASE)) {
+          baseTableSnap.add(change.getParentSnapshotId());
+        } else {
+          changeTableSnap.add(change.getParentSnapshotId());
+        }
+      });
+      tableCommitMeta.getChanges().forEach(change -> {
+        if (change.getInnerTable().equalsIgnoreCase(Constants.INNER_TABLE_BASE) &&
+            !baseTableSnap.contains(change.getSnapshotId())) {
+          rs.put(change.getInnerTable(), change.getSnapshotId());
+        }
+        if (change.getInnerTable().equalsIgnoreCase(Constants.INNER_TABLE_CHANGE) &&
+            !changeTableSnap.contains(change.getSnapshotId())) {
+          rs.put(change.getInnerTable(), change.getSnapshotId());
+        }
+      });
+    }
+    return rs;
+  }
+
   /**
    * @param time delete all cache which commit time less than time and is deleted
    */
-  public void expiredCache(long time, com.netease.arctic.table.TableIdentifier identifier) {
+  public void expiredCache(long time) {
     try (SqlSession sqlSession = getSqlSession(true)) {
       FileInfoCacheMapper fileInfoCacheMapper = getMapper(sqlSession, FileInfoCacheMapper.class);
       fileInfoCacheMapper.expireCache(time);
-
-      SnapInfoCacheMapper snapInfoCacheMapper = getMapper(sqlSession, SnapInfoCacheMapper.class);
-      snapInfoCacheMapper.expireCache(time);
     }
   }
 
@@ -220,9 +275,6 @@ public class FileInfoCacheService extends IJDBCService {
       FileInfoCacheMapper fileInfoCacheMapper = getMapper(sqlSession, FileInfoCacheMapper.class);
       fileInfoCacheMapper.deleteTableCache(tableIdentifier);
 
-      SnapInfoCacheMapper snapInfoCacheMapper = getMapper(sqlSession, SnapInfoCacheMapper.class);
-      snapInfoCacheMapper.deleteTableCache(tableIdentifier);
-
       // update local on-memory cache
       cacheTableSnapshot
           .remove(TableMetadataUtil.getTableAllIdentifyName(tableIdentifier) + Constants.INNER_TABLE_BASE);
@@ -247,15 +299,10 @@ public class FileInfoCacheService extends IJDBCService {
         return false;
       }
       if (!commitParent.equals(cacheParent)) {
-        syncCache(tableCommitMeta.getTableIdentifier(), tableChange.getInnerTable(), commitParent);
+        syncCache(tableCommitMeta.getTableIdentifier(), tableChange.getInnerTable());
         cacheParent = cacheTableSnapshot.get(innerTableIdentifier);
       }
       if (!commitParent.equals(cacheParent)) {
-        final Long finalCacheParent = cacheParent;
-        ThreadPool.getSyncFileInfoCachePool().execute(() ->
-            syncTableFileInfo(tableCommitMeta.getTableIdentifier(), tableChange.getInnerTable(), finalCacheParent,
-                tableChange.getSnapshotId())
-        );
         return true;
       }
     }
@@ -263,9 +310,13 @@ public class FileInfoCacheService extends IJDBCService {
   }
 
   private static List<Snapshot> snapshotsWithin(Table table, long fromSnapshotId, long toSnapshotId) {
-    List<Long> snapshotIds = SnapshotUtil.snapshotIdsBetween(table, fromSnapshotId, toSnapshotId);
+    List<Long> snapshotIds = Lists.reverse(SnapshotUtil.snapshotIdsBetween(table, fromSnapshotId, toSnapshotId));
     List<Snapshot> snapshots = Lists.newArrayList();
-    snapshotIds.forEach(id -> snapshots.add(table.snapshot(id)));
+    snapshotIds.forEach(id -> {
+      if (id != fromSnapshotId) {
+        snapshots.add(table.snapshot(id));
+      }
+    });
     return snapshots;
   }
 
@@ -274,11 +325,12 @@ public class FileInfoCacheService extends IJDBCService {
       TableIdentifier identifier,
       String tableType,
       List<Snapshot> snapshots) {
-    for (int i = snapshots.size() - 1; i >= 0; i--) {
+    Iterator<Snapshot> iterator = snapshots.iterator();
+    while (iterator.hasNext()) {
+      Snapshot snapshot = iterator.next();
       List<CacheFileInfo> fileInfos = new ArrayList<>();
       List<DataFile> addFiles = new ArrayList<>();
       List<DataFile> deleteFiles = new ArrayList<>();
-      Snapshot snapshot = snapshots.get(i);
       SnapshotFileUtil.getSnapshotFiles(table, snapshot, addFiles, deleteFiles);
       for (DataFile amsFile : addFiles) {
         String partitionName = StringUtils.isEmpty(partitionToPath(amsFile.getPartition())) ?
@@ -294,8 +346,14 @@ public class FileInfoCacheService extends IJDBCService {
                   .get(table.properties().get(TableProperties.TABLE_EVENT_TIME_FIELD))
                   .getLong();
         }
-        CacheFileInfo cacheFileInfo = new CacheFileInfo(identifier, snapshot.snapshotId(), null, tableType,
-            amsFile.getPath(), amsFile.getFileType(), amsFile.getFileSize(), amsFile.getMask(),
+        String primaryKey = TableMetadataUtil.getTableAllIdentifyName(identifier) + tableType + amsFile.getPath();
+        String primaryKeyMd5 = Hashing.md5()
+            .hashBytes(primaryKey.getBytes(StandardCharsets.UTF_8))
+            .toString();
+        Long parentId = snapshot.parentId() == null ? -1 : snapshot.parentId();
+        CacheFileInfo cacheFileInfo = new CacheFileInfo(primaryKeyMd5, identifier, snapshot.snapshotId(),
+            parentId, null,
+            tableType, amsFile.getPath(), amsFile.getFileType(), amsFile.getFileSize(), amsFile.getMask(),
             amsFile.getIndex(), amsFile.getSpecId(), partitionName, snapshot.timestampMillis(),
             amsFile.getRecordCount(), snapshot.operation(), watermark);
 
@@ -304,25 +362,37 @@ public class FileInfoCacheService extends IJDBCService {
 
       for (DataFile amsFile : deleteFiles) {
         CacheFileInfo cacheFileInfo = new CacheFileInfo();
-        cacheFileInfo.setTableIdentifier(identifier);
         cacheFileInfo.setDeleteSnapshotId(snapshot.snapshotId());
-        cacheFileInfo.setFilePath(amsFile.getPath());
-        cacheFileInfo.setInnerTable(tableType);
+        String primaryKey = TableMetadataUtil.getTableAllIdentifyName(identifier) + tableType + amsFile.getPath();
+        String primaryKeyMd5 = Hashing.md5()
+            .hashBytes(primaryKey.getBytes(StandardCharsets.UTF_8))
+            .toString();
+        cacheFileInfo.setPrimaryKeyMd5(primaryKeyMd5);
         fileInfos.add(cacheFileInfo);
       }
-      CacheSnapshotInfo snapshotInfo = syncSnapInfo(identifier, tableType, snapshot);
+      //remove snapshot to release memory of snapshot, because there is too much cache in BaseSnapshot
+      iterator.remove();
 
       try (SqlSession sqlSession = getSqlSession(false)) {
-        FileInfoCacheMapper fileInfoCacheMapper = getMapper(sqlSession, FileInfoCacheMapper.class);
-        fileInfos.stream().filter(e -> e.getDeleteSnapshotId() == null).forEach(fileInfoCacheMapper::insertCache);
-        fileInfos.stream().filter(e -> e.getDeleteSnapshotId() != null).forEach(fileInfoCacheMapper::updateCache);
-
-        SnapInfoCacheMapper snapInfoCacheMapper = getMapper(sqlSession, SnapInfoCacheMapper.class);
-        snapInfoCacheMapper.insertCache(snapshotInfo);
-
-        sqlSession.commit();
+        try {
+          FileInfoCacheMapper fileInfoCacheMapper = getMapper(sqlSession, FileInfoCacheMapper.class);
+          fileInfos.stream().filter(e -> e.getDeleteSnapshotId() == null).forEach(fileInfoCacheMapper::insertCache);
+          fileInfos.stream().filter(e -> e.getDeleteSnapshotId() != null).forEach(fileInfoCacheMapper::updateCache);
+          sqlSession.commit();
+        } catch (Exception e) {
+          sqlSession.rollback();
+          LOG.error(
+              "insert table {} file {} cache error",
+              identifier,
+              JSONObject.toJSONString(fileInfos),
+              e);
+        }
       } catch (Exception e) {
-        LOG.error("insert file cache error", e);
+        LOG.error(
+            "insert table {} file {} cache error",
+            identifier,
+            JSONObject.toJSONString(fileInfos),
+            e);
       }
     }
   }
@@ -337,9 +407,16 @@ public class FileInfoCacheService extends IJDBCService {
             CacheFileInfo cacheFileInfo = new CacheFileInfo();
             cacheFileInfo.setTableIdentifier(tableCommitMeta.getTableIdentifier());
             cacheFileInfo.setAddSnapshotId(tableChange.getSnapshotId());
+            cacheFileInfo.setParentSnapshotId(tableChange.getParentSnapshotId());
             cacheFileInfo.setInnerTable(tableChange.getInnerTable());
             cacheFileInfo.setFilePath(datafile.getPath());
             cacheFileInfo.setFileType(datafile.getFileType());
+            String primaryKey = TableMetadataUtil.getTableAllIdentifyName(tableCommitMeta.getTableIdentifier()) +
+                tableChange.getInnerTable() + datafile.getPath();
+            String primaryKeyMd5 = Hashing.md5()
+                .hashBytes(primaryKey.getBytes(StandardCharsets.UTF_8))
+                .toString();
+            cacheFileInfo.setPrimaryKeyMd5(primaryKeyMd5);
             cacheFileInfo.setFileSize(datafile.getFileSize());
             cacheFileInfo.setFileMask(datafile.getMask());
             cacheFileInfo.setFileIndex(datafile.getIndex());
@@ -366,47 +443,16 @@ public class FileInfoCacheService extends IJDBCService {
         if (CollectionUtils.isNotEmpty(tableChange.getDeleteFiles())) {
           tableChange.getDeleteFiles().forEach(datafile -> {
             CacheFileInfo cacheFileInfo = new CacheFileInfo();
-            cacheFileInfo.setTableIdentifier(tableCommitMeta.getTableIdentifier());
+            String primaryKey = TableMetadataUtil.getTableAllIdentifyName(tableCommitMeta.getTableIdentifier()) +
+                tableChange.getInnerTable() + datafile.getPath();
+            String primaryKeyMd5 = Hashing.md5()
+                .hashBytes(primaryKey.getBytes(StandardCharsets.UTF_8))
+                .toString();
+            cacheFileInfo.setPrimaryKeyMd5(primaryKeyMd5);
             cacheFileInfo.setDeleteSnapshotId(tableChange.getSnapshotId());
-            cacheFileInfo.setFilePath(datafile.getPath());
-            cacheFileInfo.setInnerTable(tableChange.innerTable);
             rs.add(cacheFileInfo);
           });
         }
-      });
-    }
-    return rs;
-  }
-
-  private CacheSnapshotInfo syncSnapInfo(TableIdentifier identifier, String tableType, Snapshot snapshot) {
-    CacheSnapshotInfo cache = new CacheSnapshotInfo();
-    cache.setTableIdentifier(identifier);
-    cache.setSnapshotId(snapshot.snapshotId());
-    cache.setParentSnapshotId(snapshot.parentId() == null ? -1 : snapshot.parentId());
-    cache.setAction(snapshot.operation());
-    cache.setInnerTable(tableType);
-    cache.setCommitTime(snapshot.timestampMillis());
-    return cache;
-  }
-
-  private List<CacheSnapshotInfo> genSnapInfo(TableCommitMeta tableCommitMeta) {
-    List<CacheSnapshotInfo> rs = new ArrayList<>();
-    if (CollectionUtils.isNotEmpty(tableCommitMeta.getChanges())) {
-      tableCommitMeta.getChanges().forEach(tableChange -> {
-        String innerTableIdentifier =
-            TableMetadataUtil.getTableAllIdentifyName(tableCommitMeta.getTableIdentifier()) + "." +
-                tableChange.getInnerTable();
-
-        CacheSnapshotInfo cache = new CacheSnapshotInfo();
-        cache.setTableIdentifier(tableCommitMeta.getTableIdentifier());
-        cache.setSnapshotId(tableChange.getSnapshotId());
-        cache.setParentSnapshotId(tableChange.getParentSnapshotId());
-        cache.setAction(tableCommitMeta.getAction());
-        cache.setInnerTable(tableChange.getInnerTable());
-        cache.setCommitTime(tableCommitMeta.getCommitTime());
-        rs.add(cache);
-
-        cacheTableSnapshot.put(innerTableIdentifier, tableChange.getSnapshotId());
       });
     }
     return rs;
@@ -474,7 +520,14 @@ public class FileInfoCacheService extends IJDBCService {
 
     public void doTask() {
       LOG.info("start execute doTask");
+      expiredCache();
       syncCache();
+    }
+
+    private void expiredCache() {
+      LOG.info("start execute expiredCache");
+      fileInfoCacheService.expiredCache(
+          System.currentTimeMillis() - ArcticMetaStore.conf.getLong(ArcticMetaStoreConf.FILE_CACHE_EXPIRED_INTERVAL));
     }
 
     private void syncCache() {
@@ -512,13 +565,12 @@ public class FileInfoCacheService extends IJDBCService {
 
     private void doSync(TableIdentifier tableIdentifier, String innerTable, long lowTime) {
       try {
-        List<SnapshotStatistics> snapshotStatistics =
-            fileInfoCacheService.getCurrentSnapInfo(tableIdentifier, innerTable);
-        if (CollectionUtils.isEmpty(snapshotStatistics)) {
+        SnapshotStatistics currentSnapId = fileInfoCacheService.getCurrentSnapInfo(tableIdentifier, innerTable);
+        if (currentSnapId == null) {
           fileInfoCacheService.syncTableFileInfo(tableIdentifier, innerTable, null, null);
         } else {
-          if (snapshotStatistics.get(0).getCommitTime() < lowTime) {
-            fileInfoCacheService.syncTableFileInfo(tableIdentifier, innerTable, snapshotStatistics.get(0).getId(),
+          if (currentSnapId.getCommitTime() < lowTime) {
+            fileInfoCacheService.syncTableFileInfo(tableIdentifier, innerTable, currentSnapId.getId(),
                 null);
           }
         }

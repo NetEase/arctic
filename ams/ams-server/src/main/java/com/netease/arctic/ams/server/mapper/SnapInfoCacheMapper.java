@@ -34,7 +34,7 @@ import java.util.List;
 public interface SnapInfoCacheMapper {
   String TABLE_NAME = "snapshot_info_cache";
 
-  @Insert("replace into " + TABLE_NAME + " (table_identifier, snapshot_id, parent_snapshot_id, action," +
+  @Insert("insert into " + TABLE_NAME + " (table_identifier, snapshot_id, parent_snapshot_id, action," +
       " inner_table, commit_time)" +
       " values(#{cacheFileInfo.tableIdentifier," +
       "typeHandler=com.netease.arctic.ams.server.mybatis.TableIdentifier2StringConverter}," +
@@ -43,19 +43,15 @@ public interface SnapInfoCacheMapper {
       ".mybatis.Long2TsConvertor})")
   void insertCache(@Param("cacheFileInfo") CacheSnapshotInfo info);
 
-  @Select("select snapshot_id from " + TABLE_NAME + " where table_identifier = #{tableIdentifier," +
+  @Select("select snapshot_id,parent_snapshot_id, commit_time from " + TABLE_NAME + " where table_identifier = " +
+      "#{tableIdentifier," +
       " typeHandler=com.netease.arctic.ams.server.mybatis.TableIdentifier2StringConverter} and inner_table = " +
-      "#{type} and snapshot_id = #{parentSnapId}")
-  List<Long> getCurrentSnap(
-      @Param("tableIdentifier") TableIdentifier tableIdentifier,
-      @Param("type") String tableType,
-      @Param("parentSnapId") Long parentSnapId);
-
-  @Select("select snapshot_id,commit_time from " + TABLE_NAME + " where table_identifier = #{tableIdentifier," +
-      " typeHandler=com.netease.arctic.ams.server.mybatis.TableIdentifier2StringConverter} and inner_table = " +
-      "#{type} order by commit_time desc limit 1")
+      "#{type} and commit_time = (select max(commit_time) from snapshot_info_cache where table_identifier = " +
+      "#{tableIdentifier, typeHandler=com.netease.arctic.ams.server.mybatis.TableIdentifier2StringConverter} and " +
+      "inner_table = #{type})")
   @Results({
       @Result(column = "snapshot_id", property = "id"),
+      @Result(column = "parent_snapshot_id", property = "parentId"),
       @Result(column = "commit_time", property = "commitTime",
           typeHandler = Long2TsConvertor.class)
   })
