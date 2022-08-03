@@ -46,12 +46,12 @@ const props = defineProps<{ curGroupName: string, type: string, needFresh: boole
 const loading = ref<boolean>(false)
 const tableColumns = shallowReactive([
   { dataIndex: 'tableName', title: t('table'), ellipsis: true, scopedSlots: { customRender: 'tableName' } },
-  { dataIndex: 'optimizeStatus', title: t('status'), width: '14%', ellipsis: true },
-  { dataIndex: 'durationDisplay', title: t('duration'), width: '16%', ellipsis: true },
+  { dataIndex: 'optimizeStatus', title: t('status'), width: '10%', ellipsis: true },
+  { dataIndex: 'durationDisplay', title: t('duration'), width: '10%', ellipsis: true },
   { dataIndex: 'fileCount', title: t('fileCount'), width: '10%', ellipsis: true },
   { dataIndex: 'fileSizeDesc', title: t('fileSize'), width: '10%', ellipsis: true },
   { dataIndex: 'quota', title: t('quota'), width: '10%', ellipsis: true },
-  { dataIndex: 'quotaOccupationDesc', title: t('quotaOccupation'), width: '20%', ellipsis: true }
+  { dataIndex: 'quotaOccupationDesc', title: t('quotaOccupation'), width: 160, ellipsis: true }
 ])
 const optimizerColumns = shallowReactive([
   { dataIndex: 'index', title: t('order'), width: 80, ellipsis: true },

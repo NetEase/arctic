@@ -49,7 +49,7 @@ export default defineComponent({
     flex-direction: column;
     transition: width 0.3s;
     .content {
-      padding: 12px;
+      padding: 24px;
       height: calc(100% - 48px);
       overflow: auto;
     }

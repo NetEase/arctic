@@ -83,8 +83,8 @@ export default defineComponent({
           icon: 'TableOutlined'
         },
         {
-          key: 'optimizing',
-          title: t('optimizing'),
+          key: 'optimizers',
+          title: t('optimizers'),
           icon: 'ScheduleOutlined'
         },
         {
@@ -212,7 +212,7 @@ export default defineComponent({
   }
   .tables-menu-wrap {
     position: absolute;
-    top: 48px;
+    top: 0;
     left: 200px;
     right: 0;
     bottom: 0;

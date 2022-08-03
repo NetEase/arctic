@@ -54,7 +54,7 @@ const routes: Array<RouteRecordRaw> = [
         ]
       },
       {
-        path: 'optimizing',
+        path: 'optimizers',
         name: 'Optimizing',
         component: Optimizing
       },

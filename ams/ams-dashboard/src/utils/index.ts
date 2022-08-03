@@ -100,15 +100,15 @@ export const formatMS2DisplayTime = (time: number): string => {
     return '0 ms'
   }
   if (time <= Hour) {
-    return `${Math.floor(time / Second)}s`
+    return `${Math.floor(time / Second)} s`
   }
   if (time > Hour && time <= Day) {
-    return `${Math.floor(time / Minute)}min`
+    return `${Math.floor(time / Minute)} min`
   }
   if (time > Day && time <= (30 * Day)) {
-    return `${Math.floor(time / Hour)}h`
+    return `${Math.floor(time / Hour)} h`
   }
-  return '>30d'
+  return '>30 d'
 }
 
 export const timeConversion = (millisec: number) => {

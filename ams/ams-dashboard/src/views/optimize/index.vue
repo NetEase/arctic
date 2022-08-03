@@ -59,8 +59,8 @@ export default defineComponent({
     const { t } = useI18n()
 
     const tabConfig: ILableAndValue[] = shallowReactive([
-      { label: t('tables'), value: 'tables' },
-      { label: t('optimizers'), value: 'optimizers' }
+      { label: t('optimizers'), value: 'optimizers' },
+      { label: t('tables'), value: 'tables' }
     ])
     const placeholder = reactive(usePlaceholder())
     const pagination = reactive(usePagination())
@@ -141,7 +141,7 @@ export default defineComponent({
   overflow-y: auto;
   .optimize-group {
     justify-content: space-between;
-    padding: 0 12px;
+    padding: 0 24px;
     .f-shink-0 {
       flex-shrink: 0;
     }
@@ -163,7 +163,7 @@ export default defineComponent({
     border: 1px solid #e5e5e5;
   }
   :deep(.ant-tabs-content-holder) {
-    padding: 0 12px;
+    padding: 0 24px;
   }
   :deep(.ant-tabs-nav) {
     padding: 0 12px;

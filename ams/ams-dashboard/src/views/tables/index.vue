@@ -153,10 +153,10 @@ export default defineComponent({
     line-height: 1.5;
     margin-right: 16px;
     max-width: 400px;
-    padding-left: 12px;
+    padding-left: 24px;
   }
   .table-info {
-    padding: 12px 12px 0 12px;
+    padding: 12px 24px 0 24px;
     .text-color {
       color: #7CB305;
     }

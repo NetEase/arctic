@@ -1,35 +1,49 @@
 <template>
   <div class="introduce-wrap">
     <p class="desc">
-      Welcome to arctic, arctic is a streaming lake warehouse system open sourced by NetEase.Arctic adds more real-time capabilities on top of iceberg and hive, and provides stream-batch unified, out-of-the-box metadata services for dataops,
-allowing Data lakes much more usable and practical.
+      Welcome to arctic, arctic is a streaming lake warehouse system open
+      sourced by NetEase. Arctic adds more real-time capabilities on top of
+      iceberg and hive, and provides stream-batch unified, out-of-the-box
+      metadata services for dataops, allowing Data lakes much more usable and
+      practical.
     </p>
     <h2 class="sub-title">What is arctic</h2>
-    <p class="desc">Arctic is a streaming lakehouse service built on top of apache iceberg table format.
-Through arctic, users could benefit optimized CDC、streaming update、fresh olap etc. on engines like flink, spark, and trino.
-Combined with efficient offline processing capabilities of data lakes, arctic can serve more scenarios where streaming and batch are fused.
-At the same time, the function of self-optimization、concurrent conflict resolution and standard management tools could effectively reduce the burden on users in data lake management and optimization.</p>
-    <img src="@/assets/images/arctic-introduce.png" alt="" class="arctic-introduce">
-    <p class="desc">Arctic services are presented by deploying AMS, which can be considered as a replacement for HMS (Hive Metastore), or HMS for iceberg.
-Arctic uses iceberg as the base table format, but instead of hacking the iceberg implementation, it uses iceberg as a lib.
-Arctic's open overlay architecture can help large-scale offline data lakes quickly upgraded to real-time data lakes, without worrying about compatibility issues with the original data lakes,
-allowing data lakes to meet more real-time analysis, real-time risk control, Real-time training, feature engineering and other scenarios.</p>
+    <p class="desc">
+      Arctic is a streaming lakehouse service built on top of apache iceberg
+      table format. Through arctic, users could benefit optimized CDC、streaming
+      update、fresh olap etc. on engines like flink, spark, and trino. Combined
+      with efficient offline processing capabilities of data lakes, arctic can
+      serve more scenarios where streaming and batch are fused. At the same
+      time, the function of self-optimization、concurrent conflict resolution
+      and standard management tools could effectively reduce the burden on users
+      in data lake management and optimization.
+    </p>
+    <img
+      src="@/assets/images/arctic-introduce.png"
+      alt=""
+      class="arctic-introduce"
+    />
+    <p class="desc">
+      Arctic services are presented by deploying AMS, which can be considered as
+      a replacement for HMS (Hive Metastore), or HMS for iceberg. Arctic uses
+      iceberg as the base table format, but instead of hacking the iceberg
+      implementation, it uses iceberg as a lib. Arctic's open overlay
+      architecture can help large-scale offline data lakes quickly upgraded to
+      real-time data lakes, without worrying about compatibility issues with the
+      original data lakes, allowing data lakes to meet more real-time analysis,
+      real-time risk control, Real-time training, feature engineering and other
+      scenarios.
+    </p>
     <h2 class="sub-title">Arctic features</h2>
     <ol>
       <li>Efficient streaming updates based on primary keys</li>
       <li>Data auto bucketing and self-optimized for performance and efficiency</li>
-      <li>Encapsulating data lake and message queue into a unified table to achieve lower-latency computing</li>
+      <li>Encapsulating data lake and message queue into a unified table to achieve lower-latency computing
+      </li>
       <li>Provide standardized metrics, dashboard and related management tools for streaming lakehouse</li>
       <li>Support spark and flink to read and write data, support trino to query data</li>
       <li>100% compatible with iceberg / hive table format and syntax</li>
       <li>Provide transactional guarantee for streaming and batch concurrent writing</li>
-    </ol>
-    <h2 class="sub-title">Building</h2>
-    <p class="desc">Arctic is built using Maven with Java 1.8 and Java 11(only for <code>trino</code> module).</p>
-    <ol>
-      <li>Export Java 11 home environment variable first before build: <code>export JAVA_11_HOME={YOUR_JAVA_11_HOME}</code></li>
-      <li>To invoke a build and run tests: <code>mvn package</code></li>
-      <li>To skip tests: <code>mvn -DskipTests package</code></li>
     </ol>
     <h2 class="sub-title">Engines supported</h2>
     <p class="desc">Arctic support multiple processing engines as below:</p>
@@ -68,7 +82,16 @@ allowing data lakes to meet more real-time analysis, real-time risk control, Rea
       </tbody>
     </table>
     <h2 class="sub-title">Quickstart</h2>
-    <p class="desc">Visit <a href="https://arctic.netease.com/getting-started/" target="_blank" rel="noopener noreferrer">https://arctic.netease.com/getting-started/</a> to quickly explore what arctic can do.</p>
+    <p class="desc">
+      Visit
+      <a
+        href="https://arctic.netease.com/ch/getting-started/"
+        target="_blank"
+        rel="noopener noreferrer">
+      https://arctic.netease.com/ch/getting-started/
+      </a>
+      to quickly explore what arctic can do.
+    </p>
   </div>
 </template>
 
@@ -77,24 +100,19 @@ import { defineComponent, onMounted } from 'vue'
 
 export default defineComponent({
   name: 'Introduce',
-  components: {
-  },
+  components: {},
   setup() {
-    onMounted(() => {
-    })
-    return {
-
-    }
+    onMounted(() => {})
+    return {}
   }
 })
-
 </script>
 
 <style lang="less" scoped>
 .introduce-wrap {
   font-size: 16px;
   box-sizing: border-box;
-  padding: 12px 12px 0;
+  padding: 0 12px;
   .title {
     font-size: 30px;
     font-weight: bold;
@@ -116,7 +134,7 @@ export default defineComponent({
   }
   code {
     padding: 2px 4px;
-    background-color: rgba(175,184,193,0.2);
+    background-color: rgba(175, 184, 193, 0.2);
     border-radius: 4px;
     display: inline-block;
     line-height: 14px;

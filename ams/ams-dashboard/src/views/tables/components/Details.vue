@@ -194,7 +194,7 @@ const propertiesColumns: IColumns[] = shallowReactive([
 .table-detail {
   .left-content,
   .right-content {
-    padding: 0 12px 12px;
+    padding: 0 24px 12px;
     flex-shrink: 0;
     flex-direction: column;
   }
@@ -203,6 +203,7 @@ const propertiesColumns: IColumns[] = shallowReactive([
   }
   .right-content {
     flex: 1;
+    padding-left: 0;
   }
   .table-attrs {
     margin-top: 16px;
