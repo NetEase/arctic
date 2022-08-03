@@ -55,6 +55,7 @@ nav:
   - 表管理:
       - Table Store: table-structure.md
       - Table Config: table-properties.md
+  - Optimizers: optimizers.md
   - Flink: flink.md
   - Spark:
       - Getting Started: spark/spark-get-started.md
