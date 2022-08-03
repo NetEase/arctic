@@ -3,10 +3,10 @@
 
 ## Docker-Compose
 使用 Docker-Compose 将很快帮助您搭建起一套 Arctic 使用所需的环境，相关镜像已上传到 Docker Hub中。[arctic163/ams](https://hub.docker.com/repository/docker/arctic163/ams) 镜像已包含AMS及所需环境。[arctic163/flink](https://hub.docker.com/repository/docker/arctic163/flink) 镜像已包含Flink及所需环境。(Spark 相关镜像已上传到 [arctic163/spark](https://hub.docker.com/repository/docker/arctic163/spark)，如有需要请您自行拉取使用)
-  
-要使用 Docker 以及 Docker-Compose，您需要安装 [Docker CLI](https://docs.docker.com/get-docker/) 以及 [Docker Compose CLI](https://github.com/docker/compose-cli/blob/main/INSTALL.md)。  
-  
-如果您已经万事俱备，请新建一个名为`docker-compose.yml`的文件，并写入以下内容。您也可以在 [docker-compose.yml](https://github.com/NetEase/arctic/tree/master/docker/docker-compose.yml) 处查看。  
+
+要使用 Docker 以及 Docker-Compose，您需要安装 [Docker CLI](https://docs.docker.com/get-docker/) 以及 [Docker Compose CLI](https://github.com/docker/compose-cli/blob/main/INSTALL.md)。
+
+如果您已经万事俱备，请新建一个名为`docker-compose.yml`的文件，并写入以下内容。您也可以在 [docker-compose.yml](https://github.com/NetEase/arctic/tree/master/docker/docker-compose.yml) 处查看。
 ```yaml
 version: "3"
 services:
@@ -44,11 +44,11 @@ networks:
 ```shell
 docker-compose up -d
 ```
-启动成功后，使用`docker ps`命令查看当前已启动的容器，您将看到两个个容器，分别为 ams 和 arctic_flink。 
+启动成功后，使用`docker ps`命令查看当前已启动的容器，您将看到两个个容器，分别为 ams 和 arctic_flink。
 ## 启动AMS
-如[概述](index.md)中所述，AMS(Arctic Meta Service) 是 Arctic 中负责元数据管理与结构优化的独立服务，使用 Arctic 的第一步就是启动 AMS。  
+如[概述](index.md)中所述，AMS(Arctic Meta Service) 是 Arctic 中负责元数据管理与结构优化的独立服务，使用 Arctic 的第一步就是启动 AMS。
 
-**1.启动AMS**  
+**1.启动AMS**
 
 我们已经在 AMS 容器中自动为您启动了 AMS 服务，如果您的 AMS 容器已经启动成功，可通过 [AMS Dashboard](http://localhost:1630) 来访问 AMS 页面，默认的用户名密码为：`admin/admin`。
 
@@ -82,7 +82,7 @@ create table test_db.test_table(
 将任务提交到 [Flink Standalone](https://nightlies.apache.org/flink/flink-docs-release-1.12/deployment/resource-providers/standalone/)
 的集群上运行。
 
-**1.启动 Flink SQL Client**  
+**1.启动 Flink SQL Client**
 
 使用以下命令进入 arctic_flink 容器。
 ```shell
@@ -94,7 +94,7 @@ docker exec -it arctic_flink /bin/bash
 ./bin/start-cluster.sh
 ./bin/sql-client.sh embedded
 ```
-**2.启动 Flink 实时任务**  
+**2.启动 Flink 实时任务**
 
 在 Flink SQL Client 中输入下面的 SQL（由于 Flink SQL Client 暂不支持批量输入 SQL 语句，下面的 SQL 需要逐条输入SQL Client）:
 
@@ -130,9 +130,9 @@ SET table.dynamic-table-options.enabled=true;
 SELECT id, `name` FROM arctic.test_db.test_table/*+OPTIONS('streaming' = 'true')*/;
 ```
 
-**3.模拟测试数据**  
+**3.模拟测试数据**
 
-打开一个新的 arctic_flink 容器窗口。(注意，不是创建一个新的容器)  
+打开一个新的 arctic_flink 容器窗口。(注意，不是创建一个新的容器)
 ```shell
 docker exec -it arctic_flink /bin/bash
 ```

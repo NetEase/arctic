@@ -11,18 +11,17 @@ edit_uri: ""
 
 # pip install mkdocs-material
 theme:
-    font:
-      text: Msyh
-    name: material
-    language: zh
-    custom_dir: '../../overrides/'
-    favicon: images/favicon.ico
-    logo: images/arctic_banner.png
-    palette:
-        primary: indigo
-        accent: indigo
-    icon:
-        repo: fontawesome/brands/github
+  font:
+    text: Msyh
+  name: material
+  language: zh
+  favicon: images/favicon.ico
+  logo: images/arctic_banner.png
+  palette:
+    primary: indigo
+    accent: indigo
+  icon:
+    repo: fontawesome/brands/github
 
 extra:
   search:
@@ -50,11 +49,14 @@ markdown_extensions:
       emoji_generator: !!python/name:materialx.emoji.to_svg
 
 nav:
-  - 总览: index.md
-  - 快速开始: getting-started.md
-  - 表管理:
-      - Table Store: table-structure.md
-      - Table Config: table-properties.md
+  - Overview: index.md
+  - Quickstart: docker-quickstart.md
+  - Table Format:
+      - Tablestore: table-structure.md
+  - Meta Service:
+      - Arctic Dashboard: meta-service/dashboard.md
+      - Table Management: meta-service/table-management.md
+      - Table Config: meta-service/table-properties.md
   - Flink: flink.md
   - Spark:
       - Getting Started: spark/spark-get-started.md

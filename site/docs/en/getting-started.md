@@ -54,7 +54,7 @@ create table test_db.test_table(
 
 **1.准备环境**
 
-下载flink和相关依赖：
+下载 Flink 和相关依赖：
 
 ```shell
 FLINK_VERSION=1.12.7
@@ -67,9 +67,9 @@ wget ${APACHE_FLINK_URL}/flink-${FLINK_VERSION}/flink-${FLINK_VERSION}-bin-scala
 ## 解压文件
 tar -zxvf flink-1.12.7-bin-scala_2.12.tgz
 
-# 下载 hadoop 依赖
+# 下载 Hadoop 依赖
 wget https://repo1.maven.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/${HADOOP_VERSION}-10.0/flink-shaded-hadoop-2-uber-${HADOOP_VERSION}-10.0.jar
-# 下载 arctic flink connector
+# 下载 Arctic Flink Connector
 wget https://github.com/NetEase/arctic/releases/download/v0.3.0-rc1/arctic-flink-runtime-1.12-0.3.0.jar
 ```
 
@@ -127,7 +127,7 @@ CREATE TABLE cdc_source(
     'changelog-csv.column-delimiter' = '|'
 );
 -- 往 Arctic 表实时写入数据
-INSERT INTO arctic.db.test_table
+INSERT INTO arctic.test_db.test_table
 SELECT id,
        name,
        CAST(TO_TIMESTAMP(op_time) AS TIMESTAMP(6) WITH LOCAL TIME ZONE) op_time
@@ -137,7 +137,7 @@ FROM cdc_source;
 SET table.dynamic-table-options.enabled=true;
 
 -- 读 Arctic 表的 CDC 数据，观察主键表的聚合结果
-SELECT id, `name` FROM arctic.db.test_table/*+OPTIONS('streaming' = 'true')*/;
+SELECT id, `name` FROM arctic.test_db.test_table/*+OPTIONS('streaming' = 'true')*/;
 ```
 
 **3.模拟测试数据**

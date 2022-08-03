@@ -27,10 +27,10 @@ CREATE CATALOG <catalog_name> WITH (
 修改 flink 目录中的 conf/sql-client-defaults.yaml 文件。
 ```yaml
 catalogs:
-- name: <catalog_name>
-  type: arctic
-  metastore.url: ...
-  ...
+  - name: <catalog_name>
+    type: arctic
+    metastore.url: ...
+    ...
 ```
 
 ## DDL 语句
@@ -124,7 +124,7 @@ Arctic 表提供了 File 和 Log 的存储，File 存储海量的全量数据，
 
 |Key|默认值|类型|是否必填|描述|
 |--- |--- |--- |--- |--- |
-|log-store.enable|false|Boolean|否|是否打开 Log Store，目前只支持 Kafka|
+|log-store.enable|false|Boolean|否|是否打开 logstore，目前只支持 Kafka|
 |log-store.type<img width=100/>|kafka|String|否|当前仅支持 Kafka|
 |log-store.address|(none)|String|否|当 log-store.enable=true 时必填，当前为 kafka 的 bootstrap servers 的地址。如 broker1:port1, broker2:port2|
 |log-store.topic|(none)|String|否|当 log-store.enable=true 时必填，填写 kafka topic 名称|
@@ -297,7 +297,7 @@ Hint Options
 |write.distribution-mode|hash|String|否|写入 Arctic 表的 distribution 模式。包括：none、hash|
 |write.distribution.hash-mode|auto|String|否|写入 Arctic 表的 hash 策略。只有当 write.distribution-mode=hash 时才生效。<br>primary-key、partition-key、primary-partition-key、auto。<br>primary-key: 按主键 shuffle<br>partition-key: 按分区 shuffle<br>primary-partition-key: 按主键+分区 shuffle<br>auto: 如果是有主键且有分区表，则为 primary-partition-key；如果是有主键且无分区表，则为 primary-key；如果是无主键且有分区表，则为 partition-key。否则为 none|
 |properties.*|(none)|String|否|Kafka Producer 支持的其他所有参数都可以通过在前面拼接 `properties.` 的前缀来设置，如：`'properties.batch.size'='16384'`，完整的参数信息可以参考 [kafka producer 配置](https://kafka.apache.org/documentation/#producerconfigs)|
-|其他表参数|(none)|String|否|Arctic 表的所有参数都可以通过 SQL Hint 动态修改，当然只针对此任务生效，具体的参数列表可以参考 [表配置](table-properties.md)|
+|其他表参数|(none)|String|否|Arctic 表的所有参数都可以通过 SQL Hint 动态修改，当然只针对此任务生效，具体的参数列表可以参考 [表配置](meta-service/table-properties.md)|
 
 
 ## Reading with DataStream
@@ -438,7 +438,6 @@ DataStream API 支持读取主键表和非主键表。properties 支持的配置
 ## Writing With DataStream
 Arctic 表支持通过 JAVA API 往 Log 或 File 写入数据
 ### Overwrite Data
-Arctic 表目前仅支持非主键表的动态 Overwrite 表中已有的数据
 Arctic 表目前仅支持非主键表的动态 Overwrite 表中已有的数据
 
 ```java
