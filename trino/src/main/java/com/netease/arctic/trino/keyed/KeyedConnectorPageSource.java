@@ -258,7 +258,9 @@ public class KeyedConnectorPageSource implements ConnectorPageSource {
     if (primaryKeyedFile.type() == DataFileType.BASE_FILE) {
       idToConstant.put(MetadataColumns.FILE_OFFSET_FILED_ID, Optional.of(Long.MAX_VALUE + ""));
     }
-    idToConstant.put(FILE_PATH.fieldId(), Optional.of(primaryKeyedFile.path().toString()));
+
+    arcticDeleteFilter.setCurrentDataPath(arcticFileScanTask.file().path().toString());
+
     return icebergPageSourceProvider.createPageSource(
         transaction,
         session,

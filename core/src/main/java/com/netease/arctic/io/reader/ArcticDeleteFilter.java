@@ -94,6 +94,9 @@ public abstract class ArcticDeleteFilter<T> {
   private final Accessor<StructLike> filePathAccessor;
   private final Set<String> pathSets;
 
+  private String currentDataPath;
+  private Set<Long> currentPosSet;
+
   protected ArcticDeleteFilter(
       KeyedTableScanTask keyedTableScanTask, Schema tableSchema,
       Schema requestedSchema, PrimaryKeySpec primaryKeySpec) {
@@ -176,6 +179,11 @@ public abstract class ArcticDeleteFilter<T> {
    */
   public CloseableIterable<T> filterNegate(CloseableIterable<T> records) {
     return applyEqDeletes(applyPosDeletes(records), applyEqDeletes());
+  }
+
+  public void setCurrentDataPath(String currentDataPath) {
+    this.currentDataPath = currentDataPath;
+    this.currentPosSet = null;
   }
 
   private ChangedLsn deleteLSN(StructLike structLike) {
@@ -323,7 +331,17 @@ public abstract class ArcticDeleteFilter<T> {
     Filter<T> filter = new Filter<T>() {
       @Override
       protected boolean shouldKeep(T item) {
-        Set<Long> posSet = positionMap.get(filePath(item));
+
+        Set<Long> posSet;
+        if (currentDataPath != null) {
+          if (currentPosSet == null) {
+            currentPosSet = positionMap.get(currentDataPath);
+          }
+          posSet = currentPosSet;
+        } else {
+          posSet = positionMap.get(filePath(item));
+        }
+
         if (posSet == null) {
           return true;
         }
