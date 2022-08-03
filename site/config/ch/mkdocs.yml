@@ -55,7 +55,12 @@ nav:
   - 表管理:
       - Table Store: table-structure.md
       - Table Config: table-properties.md
-  - Flink: flink.md
+  - Flink:
+      - Getting Started: flink/flink-get-started.md
+      - Hidden Kafka: flink/hidden-kafka.md
+      - Flink CDC to Arctic: flink/flink-cdc-to-arctic.md
+      - Lookup Join: flink/flink-lookup-join.md
+      - Flink Config: flink/flink.md
   - Spark:
       - Getting Started: spark/spark-get-started.md
       - Spark DDL: spark/spark-ddl.md
